@@ -5,6 +5,7 @@ import {Strategies} from './strategies/index';
 import {StrategyIndex} from './services/strategyIndex';
 import {NgxWebstorageConfiguration} from './config';
 import {StorageKeyManager} from './helpers/storageKeyManager';
+import {Crypt} from './helpers/crypt';
 
 export const LIB_CONFIG: InjectionToken<NgxWebstorageConfiguration> = new InjectionToken<NgxWebstorageConfiguration>('ngx_webstorage_config');
 
@@ -15,9 +16,11 @@ export function appInit(index: StrategyIndex) {
 
 @NgModule({})
 export class NgxWebstorageModule {
-
 	constructor(index: StrategyIndex, @Optional() @Inject(LIB_CONFIG) config: NgxWebstorageConfiguration) {
-		if (config) StorageKeyManager.consumeConfiguration(config);
+		if (config) {
+			StorageKeyManager.consumeConfiguration(config)
+			Crypt.consumeConfiguration(config)
+		}
 		else console.error('NgxWebstorage : Possible misconfiguration (The forRoot method usage is mandatory since the 3.0.0)');
 	}
 

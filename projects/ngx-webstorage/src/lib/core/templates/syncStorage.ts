@@ -1,9 +1,11 @@
+import {Observable} from 'rxjs';
+import {distinctUntilChanged, filter, shareReplay, switchMap} from 'rxjs/operators';
 import {StorageStrategy} from '../interfaces/storageStrategy';
 import {noop} from '../../helpers/noop';
 import {StorageService} from '../interfaces/storageService';
 import {StorageKeyManager} from '../../helpers/storageKeyManager';
-import {Observable} from 'rxjs';
-import {distinctUntilChanged, filter, shareReplay, switchMap} from 'rxjs/operators';
+import {Crypt} from '../../helpers/crypt';
+import {NgxWebstorageConfiguration} from '../../config';
 
 export class SyncStorage implements StorageService {
 	constructor(protected strategy: StorageStrategy<any>) {
@@ -12,11 +14,13 @@ export class SyncStorage implements StorageService {
 	retrieve(key: string): any {
 		let value: any;
 		this.strategy.get(StorageKeyManager.normalize(key)).subscribe((result) => value = typeof result === 'undefined' ? null : result);
+		if (Crypt.useEncryption) return Crypt.decrypt(value);
 		return value;
 	}
 
 	store(key: string, value: any): any {
 		this.strategy.set(StorageKeyManager.normalize(key), value).subscribe(noop);
+		if (Crypt.useEncryption) return Crypt.encrypt(value);
 		return value;
 	}
 
@@ -36,6 +40,9 @@ export class SyncStorage implements StorageService {
 			distinctUntilChanged(),
 			shareReplay()
 		);
+	}
+
+	static consumeConfiguration(config: NgxWebstorageConfiguration) {
 	}
 
 }

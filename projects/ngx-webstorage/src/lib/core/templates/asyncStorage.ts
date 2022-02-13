@@ -1,8 +1,10 @@
+import {distinctUntilChanged, filter, map, shareReplay, switchMap} from 'rxjs/operators';
 import {StorageStrategy} from '../interfaces/storageStrategy';
 import {Observable} from 'rxjs';
 import {StorageService} from '../interfaces/storageService';
 import {StorageKeyManager} from '../../helpers/storageKeyManager';
-import {distinctUntilChanged, filter, map, shareReplay, switchMap} from 'rxjs/operators';
+import {Crypt} from '../../helpers/crypt';
+import {NgxWebstorageConfiguration} from '../../config';
 
 export class AsyncStorage implements StorageService {
 
@@ -11,12 +13,15 @@ export class AsyncStorage implements StorageService {
 
 	retrieve(key: string): Observable<any> {
 		return this.strategy.get(StorageKeyManager.normalize(key)).pipe(
-			map((value: any) => typeof value === 'undefined' ? null : value)
+			map((value: any) => {
+				if (Crypt.useEncryption) return Crypt.decrypt(value);
+				return typeof value === 'undefined' ? null : value
+			})
 		);
 	}
 
 	store(key: string, value: any): Observable<any> {
-		return this.strategy.set(StorageKeyManager.normalize(key), value);
+		return this.strategy.set(StorageKeyManager.normalize(key), Crypt.useEncryption ? Crypt.encrypt(value) : value);
 	}
 
 	clear(key?: string): Observable<void> {
@@ -33,5 +38,8 @@ export class AsyncStorage implements StorageService {
 			distinctUntilChanged(),
 			shareReplay()
 		);
+	}
+
+	static consumeConfiguration(config: NgxWebstorageConfiguration) {
 	}
 }
